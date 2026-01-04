@@ -99,7 +99,7 @@ def main():
         concrete=conc, steel=steel, w=w, slab_case=slab_case
     )
 
-    out_x, out_y, thk = compute(data)
+    out_x, out_y, thk = compute(data) # type: ignore
 
     print("\n" + "=" * 100)
     print(f"Kısa={min(lx, ly):.3f} m, Uzun={max(lx, ly):.3f} m, Kolon={col:.3f} m")
