@@ -1,11 +1,6 @@
 # Slab Design Automation Programming: Required Steps
 Below are the required steps to structure your design automation programming, incorporating the coefficient method.
 
-*Unit Convention*
-• Force: N
-• Length: mm
-• Moment Nmm
-
 1. Pre-Processing and Input Module
 Define the building attributes and geometry.
 • Geometric Input: Define span lengths (Lx ,Ly), beam widths, and story heights.
