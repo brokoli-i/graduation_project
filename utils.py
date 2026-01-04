@@ -4,8 +4,104 @@
 
 import math
 from typing import Dict, List, Optional, Tuple
-from constant import CONC_NODES, K_TABLE_ROWS, M_NODES, PHI_GRID, S_GRID
+from constant import CONC_NODES, K_TABLE_ROWS, M_NODES, PHI_GRID, S_GRID, MIN_CONCRETE_GRADE, MIN_BEAM_WIDTH_MM
 from models import BarChoice
+
+# ============================================================
+# VALIDATION FUNCTIONS (TS500/TBDY-2018)
+# ============================================================
+
+def validate_concrete_grade(concrete: str) -> Tuple[bool, str]:
+    """
+    Check fck >= 25 (minimum C25 per Turkish code)
+    Returns (is_valid, message)
+    """
+    try:
+        fck = parse_concrete(concrete)
+        if fck < MIN_CONCRETE_GRADE:
+            return False, f"Beton sınıfı C{int(fck)} < C{MIN_CONCRETE_GRADE} (minimum). C{MIN_CONCRETE_GRADE} veya üzeri kullanın."
+        return True, f"Beton sınıfı C{int(fck)} ✓ (≥ C{MIN_CONCRETE_GRADE})"
+    except ValueError as e:
+        return False, str(e)
+
+
+def validate_beam_width(width_mm: float, direction: str = "") -> Tuple[bool, str]:
+    """
+    Check beam width >= 250mm per TS500
+    Returns (is_valid, message)
+    """
+    if width_mm < MIN_BEAM_WIDTH_MM:
+        return False, f"Kiriş genişliği {direction}{width_mm:.0f}mm < {MIN_BEAM_WIDTH_MM}mm (minimum)"
+    return True, f"Kiriş genişliği {direction}{width_mm:.0f}mm ✓ (≥ {MIN_BEAM_WIDTH_MM}mm)"
+
+
+def validate_coefficient_method_applicability(q: float, g: float, L_min: float, L_max: float) -> Tuple[bool, str, List[str]]:
+    """
+    Check coefficient method applicability per TS500:
+    - q/g <= 2
+    - Lmin/Lmax > 0.8
+    Returns (is_applicable, summary_message, detail_messages)
+    """
+    issues = []
+    details = []
+    
+    # Check q/g ratio
+    if g > 0:
+        qg_ratio = q / g
+        if qg_ratio > 2.0:
+            issues.append(f"q/g = {qg_ratio:.2f} > 2.0")
+            details.append(f"q/g = {qg_ratio:.2f} > 2.0 → Katsayı yöntemi UYGULANAMAZ")
+        else:
+            details.append(f"q/g = {qg_ratio:.2f} ≤ 2.0 ✓")
+    else:
+        issues.append("g = 0, q/g hesaplanamaz")
+        details.append("g = 0, q/g hesaplanamaz")
+    
+    # Check span ratio
+    if L_max > 0:
+        span_ratio = L_min / L_max
+        if span_ratio <= 0.8:
+            issues.append(f"Lmin/Lmax = {span_ratio:.2f} ≤ 0.8")
+            details.append(f"Lmin/Lmax = {span_ratio:.2f} ≤ 0.8 → Katsayı yöntemi UYGULANAMAZ")
+        else:
+            details.append(f"Lmin/Lmax = {span_ratio:.2f} > 0.8 ✓")
+    else:
+        issues.append("L_max = 0, oran hesaplanamaz")
+        details.append("L_max = 0, oran hesaplanamaz")
+    
+    is_applicable = len(issues) == 0
+    summary = "Katsayı yöntemi uygulanabilir ✓" if is_applicable else f"UYARI: {'; '.join(issues)}"
+    return is_applicable, summary, details
+
+
+def calculate_net_span(L_gross: float, beam_w_left_mm: float, beam_w_right_mm: float) -> float:
+    """
+    Calculate net span: Lsn = L - w_left/2 - w_right/2
+    L_gross in meters, beam widths in mm
+    Returns net span in meters
+    """
+    deduction = (beam_w_left_mm + beam_w_right_mm) / 2000.0  # Convert mm to m
+    return max(L_gross - deduction, 0.1)  # Minimum 0.1m
+
+
+def calculate_loads(h_mm: float, g_additional: float, q_live: float) -> Tuple[float, float, float, float]:
+    """
+    Calculate loads per TS500:
+    - g_self_weight = (h_mm/1000) * 25 kN/m³
+    - g_total = g_self_weight + g_additional
+    - pd = 1.4*g_total + 1.6*q_live
+    
+    Returns (g_self_weight, g_total, q_live, pd_factored)
+    """
+    g_self_weight = (h_mm / 1000.0) * 25.0  # kN/m²
+    g_total = g_self_weight + g_additional
+    pd_factored = 1.4 * g_total + 1.6 * q_live
+    return g_self_weight, g_total, q_live, pd_factored
+
+
+# ============================================================
+# INTERPOLATION AND HELPER FUNCTIONS
+# ============================================================
 
 def lerp(a: float, b: float, t: float) -> float:
     return a + (b - a) * t

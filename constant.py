@@ -3,6 +3,32 @@
 # ============================================================
 
 # ============================================================
+# 1) ONE-WAY SLAB MOMENT COEFFICIENTS (TS500)
+# For use when q/g ≤ 2 and Lmin/Lmax > 0.8
+# ============================================================
+ONEWAY_COEFFICIENTS = {
+    "simple": {
+        "pos": 1/8,       # Simple span: M = w*Ln²/8
+        "neg": 0.0        # No negative moment
+    },
+    "one_end_continuous": {
+        "pos": 1/11,      # Positive moment at midspan
+        "neg_cont": 1/10  # Negative moment at continuous end
+    },
+    "both_ends_continuous": {
+        "pos": 1/16,      # Positive moment at midspan
+        "neg": 1/11       # Negative moment at supports
+    },
+    "cantilever": {
+        "neg": 1/2        # M = w*Ln²/2
+    }
+}
+
+# Minimum material values
+MIN_CONCRETE_GRADE = 25  # C25 minimum per Turkish code
+MIN_BEAM_WIDTH_MM = 250  # Minimum beam width per TS500/TBDY-2018
+
+# ============================================================
 # 2) K / ks ABAK TABLOSU
 # K (x10^5) olarak veriliyor.
 # K hesabı:  K = (b*d^2/M) * 1e5  [b=1000mm şerit, d=mm, M=Nmm/m]
