@@ -13,7 +13,7 @@ Define the building attributes and geometry.
 Before calculating loads, verify the slab thickness (h) meets code minimums to avoid deflection checks.
 • Minimum Thickness: Generally h≥80 mm (or 120 mm for trafficable areas).
 • One-way Control: h≥Ln/30.
-• Two-way Control: Based on the D0U2 formula: h≥ (Lsn / (15+20/m))*(1− αs/4).
+• Two-way Control: Based on the D0U2 formula: h≥ (Lsn/(15+20/m))​⋅(1− αs/4).
 ​
 3. Load Analysis
 • Dead Loads (g): Calculate self-weight (h×25 kN/m³), coating, and plaster weights.
